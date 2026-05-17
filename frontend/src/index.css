@@ -2,8 +2,108 @@ body {
   margin: 0;
   font-family: system-ui, sans-serif;
   background: #eef4ed;
+  color: #1d2a1d;
 }
 
 .app {
+  max-width: 700px;
+  margin: 0 auto;
   padding: 1rem;
 }
+
+h1 {
+  background: #2d8a3e;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin: 0 0 0.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 2px solid #2d8a3e;
+  margin-bottom: 1rem;
+}
+
+.form input,
+.form select {
+  padding: 0.5rem;
+  border: 1px solid #cfd9cf;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.form button {
+  background: #2d8a3e;
+  color: white;
+  border: 0;
+  padding: 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.lista {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.card {
+  background: white;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #cfd9cf;
+}
+
+.card h3 { margin: 0.25rem 0; }
+
+.cat {
+  font-size: 0.75rem;
+  background: #2d8a3e;
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.estados {
+  display: flex;
+  gap: 0.2rem;
+  margin: 0.5rem 0;
+}
+
+.estados button {
+  flex: 1;
+  padding: 0.2rem;
+  font-size: 0.75rem;
+  border: 1px solid #cfd9cf;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.estados button.sel {
+  background: #2d8a3e;
+  color: white;
+  border-color: #2d8a3e;
+}
+
+.del {
+  background: transparent;
+  color: #888;
+  border: 1px solid #cfd9cf;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.estado-faltante { border-left: 4px solid #d83a3a; }
+.estado-repetida { border-left: 4px solid #e3a72e; }
+.estado-pegada   { border-left: 4px solid #2d8a3e; }
