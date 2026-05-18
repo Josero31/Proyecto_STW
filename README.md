@@ -44,6 +44,10 @@ items: id, nombre, categoria_id, estado, atributos (jsonb), activo
 
 registros: id, item_id, fecha, valor, notas
 
+## Captura
+
+![app corriendo](docs/fase1.png)
+
 ## Estampas que use de prueba
 
 - Messi (Grupo A) - pegada
@@ -51,3 +55,7 @@ registros: id, item_id, fecha, valor, notas
 - Vinicius (Grupo F) - faltante
 - Bellingham (Grupo G) - pegada
 - Cristiano (Grupo H) - faltante
+
+## Nota sobre la fase 2
+
+Por ahora las estampas se agregan a mano con el formulario, una por una. En la fase 2 pienso pre-cargar el album entero (las casi 1000 estampas del mundial: FWC, los 48 paises con sus 20 estampas, y las CC) a la base con un seed, y la interfaz va a cambiar a un grid donde solo le hago click a cada estampa para marcarla pegada o repetida.
