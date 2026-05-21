@@ -84,10 +84,35 @@ Como el album es de futbol elegi una paleta verde (cesped) con dorado (trofeo). 
 | `--primary`   | `#4caf5a` | El `#2d8a3e` del tema claro sobre fondo oscuro se veia turbio, asi que lo subi de brillo. |
 | `--accent`    | `#e6c060` | Dorado mas saturado que en claro. En oscuro los amarillos opacos se ven verdosos. |
 
-## Captura
+## Capturas
 
-![app corriendo](docs/fase1.png)
+### Fase 1 (estado inicial)
 
-## Nota para fase 3
+![fase 1](docs/fase1.png)
 
-Por ahora las estampas se siguen agregando una por una con el formulario. En la fase 3 quiero pre-cargar el album entero (FWC, los 48 paises con sus 20 estampas, y las CC: ~1000 estampas) a la base con un seed, y cambiar la UI a un grid donde solo le hago click a cada celda para marcarla pegada o repetida (como la planilla impresa del album).
+### Fase 2 (estado actual)
+
+![fase 2 - tema oscuro, switch API/Local, categorias con bandera y color](docs/fase%202.png)
+
+**Lo que cambia visualmente entre fase 1 y fase 2** (todo visible en la captura de arriba):
+
+- **Barra superior con 2 controles nuevos**: boton de tema (☀️ claro / 🌙 oscuro) y switch de modo (💾 Local ↔ ☁️ API).
+- **Tema oscuro funcional**: la captura esta tomada en oscuro. En fase 1 solo existia el verde claro.
+- **Cards con bandera y color por grupo**: ahora cada categoria muestra el codigo del pais cabeza de serie (MX, AR, FR, ES, DE) y el borde superior toma el color de la bandera. En fase 1 todas las cards eran iguales.
+- **Footer con atajos visibles**: `Ctrl+N` para enfocar el input y `T` para cambiar tema.
+
+## Decisiones de scope - fase 2
+
+En el README de la fase 1 escribi que en la fase 2 queria pre-cargar el album entero con un seed (~993 estampas: 19 FWC + 48 paises × 20 + 14 CC) y cambiar la UI a un grid tipo planilla. **No lo hice en esta fase y fue a proposito**.
+
+La rubrica de fase 2 puntea 4 cosas concretas: StorageContext hibrido (30 pts), modo API↔Local (15), ThemeContext (15), useRef minimo 2 usos (15), categorias con emoji/color (10) y git+README+paleta (15). Esos 100 pts son los que prioricé.
+
+El seed + grid son cambios grandes (schema nuevo con `codigo`/`pais`/`numero`, endpoint nuevo `PATCH /api/items/:codigo/estado`, vista grid agrupada, indicador de progreso, migrar las estampas viejas) y si los metia ahora me iban a comer el tiempo de los contextos y los useRef, que son lo que se evalua. Preferi entregar lo de la rubrica completo y dejar el seed/grid para fase 3, cuando ya pueda iterar sobre una base estable.
+
+## Pendiente para fase 3
+
+- `backend/src/db/seed.js` con las ~993 estampas oficiales (FWC1-FWC19, MEX1-MEX20, RSA1-RSA20, ..., PAN1-PAN20, CC1-CC14).
+- Schema: agregar `codigo TEXT UNIQUE`, `pais TEXT`, `numero INT` a `items`.
+- `PATCH /api/items/:codigo/estado` para marcar por codigo en vez de UUID (mas rapido desde el grid).
+- `VistaAlbum.jsx`: grid agrupado por pais, click cicla faltante → pegada → repetida → faltante. El formulario actual queda como "modo manual" para estampas fuera del seed.
+- Indicador "678/993 pegadas (68%)" arriba del grid.
