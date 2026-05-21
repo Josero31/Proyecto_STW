@@ -1,45 +1,124 @@
+/* paleta del album - fase 2 */
+/* claro: inspirado en cesped y papel del album panini */
+body[data-theme="claro"] {
+  --bg:        #f3f6ed;
+  --surface:   #ffffff;
+  --border:    #c8d4bf;
+  --text:      #1d2a1d;
+  --primary:   #2d8a3e;
+  --accent:    #c5a046;
+
+  --estado-faltante: #d83a3a;
+  --estado-repetida: #e3a72e;
+  --estado-pegada:   #2d8a3e;
+}
+
+/* oscuro: la mesa de noche, mirando el album antes de dormir */
+body[data-theme="oscuro"] {
+  --bg:        #0f1a14;
+  --surface:   #1a2820;
+  --border:    #2d3d34;
+  --text:      #e8efe6;
+  --primary:   #4caf5a;
+  --accent:    #e6c060;
+
+  --estado-faltante: #ef6a6a;
+  --estado-repetida: #f0c060;
+  --estado-pegada:   #4caf5a;
+}
+
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
-  background: #eef4ed;
-  color: #1d2a1d;
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.2s, color 0.2s;
 }
 
 .app {
-  max-width: 700px;
+  max-width: 760px;
   margin: 0 auto;
   padding: 1rem;
 }
 
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
 h1 {
-  background: #2d8a3e;
+  background: var(--primary);
   color: white;
   padding: 0.75rem 1rem;
   border-radius: 8px;
-  margin: 0 0 0.5rem;
+  margin: 0;
+  flex: 1;
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-toggle {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  font: inherit;
+}
+
+.switch-modo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.estado-app {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  opacity: 0.85;
 }
 
 .form {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  background: white;
+  background: var(--surface);
   padding: 1rem;
   border-radius: 8px;
-  border: 2px solid #2d8a3e;
+  border: 2px solid var(--primary);
   margin-bottom: 1rem;
 }
+
+.form h2 { margin: 0 0 0.25rem; }
 
 .form input,
 .form select {
   padding: 0.5rem;
-  border: 1px solid #cfd9cf;
+  border: 1px solid var(--border);
   border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
   font: inherit;
 }
 
 .form button {
-  background: #2d8a3e;
+  background: var(--primary);
   color: white;
   border: 0;
   padding: 0.6rem;
@@ -48,6 +127,8 @@ h1 {
   font-weight: 600;
 }
 
+.form button:disabled { opacity: 0.6; cursor: wait; }
+
 .lista {
   display: grid;
   gap: 0.75rem;
@@ -55,19 +136,18 @@ h1 {
 }
 
 .card {
-  background: white;
+  background: var(--surface);
   padding: 0.75rem;
   border-radius: 8px;
-  border: 1px solid #cfd9cf;
+  border: 1px solid var(--border);
 }
 
-.card h3 { margin: 0.25rem 0; }
+.card h3 { margin: 0.25rem 0; color: var(--text); }
 
 .cat {
   font-size: 0.75rem;
-  background: #2d8a3e;
   color: white;
-  padding: 0.15rem 0.5rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 999px;
   display: inline-block;
 }
@@ -80,30 +160,54 @@ h1 {
 
 .estados button {
   flex: 1;
-  padding: 0.2rem;
+  padding: 0.25rem;
   font-size: 0.75rem;
-  border: 1px solid #cfd9cf;
-  background: white;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
   border-radius: 4px;
   cursor: pointer;
 }
 
 .estados button.sel {
-  background: #2d8a3e;
+  background: var(--primary);
   color: white;
-  border-color: #2d8a3e;
+  border-color: var(--primary);
 }
 
 .del {
   background: transparent;
-  color: #888;
-  border: 1px solid #cfd9cf;
+  color: var(--text);
+  opacity: 0.7;
+  border: 1px solid var(--border);
   font-size: 0.75rem;
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
   cursor: pointer;
 }
 
-.estado-faltante { border-left: 4px solid #d83a3a; }
-.estado-repetida { border-left: 4px solid #e3a72e; }
-.estado-pegada   { border-left: 4px solid #2d8a3e; }
+.estado-faltante { border-left: 4px solid var(--estado-faltante); }
+.estado-repetida { border-left: 4px solid var(--estado-repetida); }
+.estado-pegada   { border-left: 4px solid var(--estado-pegada); }
+
+.vacio {
+  color: var(--text);
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.atajos {
+  margin-top: 1.25rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  opacity: 0.7;
+}
+
+kbd {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 0.25rem;
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+}
