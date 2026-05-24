@@ -5,6 +5,7 @@ import { useStorage } from '../context/StorageProvider.jsx';
 export default function FormularioItem({ onAgregado, inputRef }) {
   const { guardarItem } = useStorage();
   const [nombre, setNombre] = useState('');
+  const [numero, setNumero] = useState('');
   const [categoriaId, setCategoriaId] = useState(CATEGORIAS[0].id);
   const [estado, setEstado] = useState('faltante');
   const [enviando, setEnviando] = useState(false);
@@ -24,10 +25,13 @@ export default function FormularioItem({ onAgregado, inputRef }) {
         nombre: nombre.trim(),
         categoriaId,
         estado,
+        // el numero es opcional (para estampas fuera de la numeracion oficial)
+        numero: numero === '' ? null : Number(numero),
         atributos: {},
       });
       onAgregado(guardado);
       setNombre('');
+      setNumero('');
       setEstado('faltante');
       // tras agregar quiero seguir capturando estampas sin tocar el mouse
       ref.current?.focus();
@@ -43,9 +47,16 @@ export default function FormularioItem({ onAgregado, inputRef }) {
       <h2>Nueva estampa</h2>
       <input
         ref={ref}
-        placeholder="ej. Messi"
+        placeholder="ej. MEX10 o Messi"
         value={nombre}
         onChange={(e) => setNombre(e.target.value)}
+      />
+      <input
+        type="number"
+        min="1"
+        placeholder="# (opcional)"
+        value={numero}
+        onChange={(e) => setNumero(e.target.value)}
       />
       <select value={categoriaId} onChange={(e) => setCategoriaId(e.target.value)}>
         {CATEGORIAS.map((c) => (

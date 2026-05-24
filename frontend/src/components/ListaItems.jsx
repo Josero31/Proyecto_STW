@@ -1,8 +1,8 @@
 import ItemCard from './ItemCard.jsx';
 
-export default function ListaItems({ items, onActualizado, onEliminado }) {
+export default function ListaItems({ items, onCambiarEstado, onArchivar }) {
   if (items.length === 0) {
-    return <p className="vacio">todavia no hay estampas</p>;
+    return <p className="vacio">ninguna estampa coincide con los filtros</p>;
   }
   return (
     <div className="lista">
@@ -10,8 +10,8 @@ export default function ListaItems({ items, onActualizado, onEliminado }) {
         <ItemCard
           key={it.id}
           item={it}
-          onActualizado={onActualizado}
-          onEliminado={onEliminado}
+          onCambiarEstado={onCambiarEstado}
+          onArchivar={onArchivar}
         />
       ))}
     </div>

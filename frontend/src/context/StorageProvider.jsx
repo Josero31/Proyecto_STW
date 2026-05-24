@@ -55,6 +55,8 @@ export function StorageProvider({ children }) {
           nombre: x.nombre,
           categoriaId: x.categoria_id ?? x.categoriaId,
           estado: x.estado,
+          // el backend no tiene columna numero todavia, lo guardo en atributos
+          numero: x.atributos?.numero ?? null,
           atributos: x.atributos || {},
           activo: x.activo,
         }));
@@ -79,7 +81,7 @@ export function StorageProvider({ children }) {
             nombre: item.nombre,
             categoriaId: item.categoriaId,
             estado: item.estado,
-            atributos: item.atributos || {},
+            atributos: { ...(item.atributos || {}), numero: item.numero ?? null },
           }),
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -89,6 +91,7 @@ export function StorageProvider({ children }) {
           nombre: guardado.nombre,
           categoriaId: guardado.categoria_id,
           estado: guardado.estado,
+          numero: guardado.atributos?.numero ?? null,
           atributos: guardado.atributos || {},
           activo: guardado.activo,
         };
@@ -137,6 +140,17 @@ export function StorageProvider({ children }) {
     [modo]
   );
 
+  // siembra estampas de ejemplo (solo en modo local) para poder probar las
+  // graficas con volumen. En modo API no hago nada -> ahi se cargan de verdad.
+  const sembrarLocal = useCallback(
+    (items) => {
+      if (modo !== 'local') return false;
+      escribirLocal(items);
+      return true;
+    },
+    [modo]
+  );
+
   // reset del error al cambiar de modo para no arrastrarlo
   useEffect(() => {
     setError(null);
@@ -153,6 +167,7 @@ export function StorageProvider({ children }) {
         guardarItem,
         actualizarItem,
         eliminarItem,
+        sembrarLocal,
       }}
     >
       {children}
