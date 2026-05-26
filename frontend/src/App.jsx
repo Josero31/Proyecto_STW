@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import FormularioItem from './components/FormularioItem.jsx';
 import ListaItems from './components/ListaItems.jsx';
+import Filtros from './components/Filtros.jsx';
+import Estadisticas from './components/Estadisticas.jsx';
 import { useStorage } from './context/StorageProvider.jsx';
 import { useTema } from './context/ThemeContext.jsx';
 import { itemsReducer, estadoInicial } from './reducers/itemsReducer.js';
 import { generarEjemplo } from './utils/seed.js';
+import { calcularEstadisticas } from './utils/estadisticas.js';
 
 const LLAVE_ACTIVIDAD = 'album_mundial2026_actividad';
 
@@ -127,13 +130,37 @@ export default function App() {
     [eliminarItem]
   );
 
+  const filtrar = useCallback((campo, valor) => {
+    dispatch({ type: 'FILTRAR', payload: { campo, valor } });
+  }, []);
+
+  const limpiarFiltros = useCallback(() => {
+    dispatch({ type: 'LIMPIAR_FILTROS' });
+  }, []);
+
   function cargarEjemplo() {
     const { lista, actividad } = generarEjemplo(hoyISO());
     sembrarLocal(lista); // en modo API no hace nada
     dispatch({ type: 'HIDRATAR', payload: { lista, actividad } });
   }
 
-  const visibles = estado.lista.filter((i) => i.activo !== false);
+  // lista visible: solo activas + filtros combinados (categoria + estado + busqueda)
+  const itemsVisibles = useMemo(() => {
+    let res = estado.lista.filter((i) => i.activo !== false);
+    if (estado.busqueda) {
+      const q = estado.busqueda.toLowerCase();
+      res = res.filter((i) => i.nombre.toLowerCase().includes(q));
+    }
+    if (estado.filtroCategoria !== 'todas') {
+      res = res.filter((i) => i.categoriaId === estado.filtroCategoria);
+    }
+    if (estado.filtroEstado !== 'todos') {
+      res = res.filter((i) => i.estado === estado.filtroEstado);
+    }
+    return res;
+  }, [estado.lista, estado.busqueda, estado.filtroCategoria, estado.filtroEstado]);
+
+  const stats = useMemo(() => calcularEstadisticas(itemsVisibles), [itemsVisibles]);
 
   return (
     <div className="app">
@@ -155,7 +182,7 @@ export default function App() {
       </header>
 
       <p className="estado-app">
-        {visibles.length} estampas
+        {itemsVisibles.length} estampas en vista
         {cargando && ' · cargando…'}
         {error && ` · error: ${error}`}
         {estado.lista.length === 0 && (
@@ -165,10 +192,20 @@ export default function App() {
         )}
       </p>
 
+      <Estadisticas stats={stats} />
+
       <FormularioItem onAgregado={trasAgregar} inputRef={inputNombreRef} />
 
+      <Filtros
+        filtroCategoria={estado.filtroCategoria}
+        filtroEstado={estado.filtroEstado}
+        busqueda={estado.busqueda}
+        onFiltrar={filtrar}
+        onLimpiar={limpiarFiltros}
+      />
+
       <ListaItems
-        items={visibles}
+        items={itemsVisibles}
         onCambiarEstado={cambiarEstado}
         onArchivar={archivar}
       />
