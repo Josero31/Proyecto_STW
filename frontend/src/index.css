@@ -291,6 +291,37 @@ kbd {
 .chip-pegada   { border-color: var(--estado-pegada); }
 .chip-especial { border-color: var(--accent); }
 
+/* graficas */
+.graficas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.grafica {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem;
+}
+
+.grafica h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* la grafica original (apilada) ocupa el ancho completo */
+.grafica-ancha {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 620px) {
+  .graficas {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* barra de filtros */
 .filtros {
   display: flex;

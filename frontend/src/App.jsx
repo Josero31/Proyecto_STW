@@ -3,11 +3,17 @@ import FormularioItem from './components/FormularioItem.jsx';
 import ListaItems from './components/ListaItems.jsx';
 import Filtros from './components/Filtros.jsx';
 import Estadisticas from './components/Estadisticas.jsx';
+import Graficas from './components/Graficas.jsx';
 import { useStorage } from './context/StorageProvider.jsx';
 import { useTema } from './context/ThemeContext.jsx';
 import { itemsReducer, estadoInicial } from './reducers/itemsReducer.js';
 import { generarEjemplo } from './utils/seed.js';
-import { calcularEstadisticas } from './utils/estadisticas.js';
+import {
+  calcularEstadisticas,
+  datosPorCategoria,
+  datosApiladosPorCategoria,
+  datosActividad7Dias,
+} from './utils/estadisticas.js';
 
 const LLAVE_ACTIVIDAD = 'album_mundial2026_actividad';
 
@@ -56,7 +62,7 @@ export default function App() {
     };
   }, [obtenerItems]);
 
-  // persisto la actividad cada vez que cambia (historial de la grafica de 7 dias)
+  // persisto la actividad cada vez que cambia (el historial de la grafica de 7 dias)
   useEffect(() => {
     localStorage.setItem(LLAVE_ACTIVIDAD, JSON.stringify(estado.actividad));
   }, [estado.actividad]);
@@ -95,7 +101,11 @@ export default function App() {
     return () => window.removeEventListener('keydown', manejarTecla);
   }, [cambiarTema]);
 
-  // handlers memorizados con useCallback -> bajan estables a ItemCard (React.memo)
+  // --- handlers memorizados (useCallback) que bajan a los hijos ---
+  // dispatch es estable, asi que estos handlers solo cambian si cambia la
+  // funcion de storage (al cambiar de modo). Eso es lo que hace que el
+  // React.memo de ItemCard de verdad evite renders al filtrar/buscar.
+
   const trasAgregar = useCallback((nuevo) => {
     dispatch({ type: 'AGREGAR', payload: nuevo });
   }, []);
@@ -105,6 +115,7 @@ export default function App() {
       try {
         await actualizarItem(id, { estado: nuevoEstado });
         dispatch({ type: 'CAMBIAR_ESTADO', payload: { id, estado: nuevoEstado } });
+        // si la acabo de pegar, registro el evento para la grafica de 7 dias
         if (nuevoEstado === 'pegada') {
           dispatch({
             type: 'REGISTRAR_ACTIVIDAD',
@@ -144,6 +155,8 @@ export default function App() {
     dispatch({ type: 'HIDRATAR', payload: { lista, actividad } });
   }
 
+  // --- derivados con useMemo ---
+
   // lista visible: solo activas + filtros combinados (categoria + estado + busqueda)
   const itemsVisibles = useMemo(() => {
     let res = estado.lista.filter((i) => i.activo !== false);
@@ -160,7 +173,15 @@ export default function App() {
     return res;
   }, [estado.lista, estado.busqueda, estado.filtroCategoria, estado.filtroEstado]);
 
+  // las estadisticas y las graficas se calculan sobre la lista YA filtrada,
+  // por eso reaccionan a los filtros activos.
   const stats = useMemo(() => calcularEstadisticas(itemsVisibles), [itemsVisibles]);
+  const porCategoria = useMemo(() => datosPorCategoria(itemsVisibles), [itemsVisibles]);
+  const apiladas = useMemo(() => datosApiladosPorCategoria(itemsVisibles), [itemsVisibles]);
+  const actividad7 = useMemo(
+    () => datosActividad7Dias(estado.actividad, hoyISO()),
+    [estado.actividad]
+  );
 
   return (
     <div className="app">
@@ -193,6 +214,8 @@ export default function App() {
       </p>
 
       <Estadisticas stats={stats} />
+
+      <Graficas actividad7={actividad7} porCategoria={porCategoria} apiladas={apiladas} />
 
       <FormularioItem onAgregado={trasAgregar} inputRef={inputNombreRef} />
 
