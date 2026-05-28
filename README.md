@@ -2,7 +2,7 @@
 
 Proyecto Web - STW 2026, UVG. Fase 3.
 
-App para llevar control de mi album Panini del Mundial 2026. Marco estampas faltantes, repetidas y pegadas, organizadas por los 12 grupos del Mundial.
+App para llevar control de mi album Panini del Mundial 2026. Marco estampas faltantes, repetidas y pegadas, organizadas por equipo (las 48 selecciones + las oficiales FWC y las de Coca-Cola).
 
 ## Stack
 
@@ -117,16 +117,32 @@ Esta fase mueve todo el estado del album a un **reducer puro**, agrega **3 grafi
 (Recharts) que reaccionan a los filtros, y optimiza el render con
 **useMemo / useCallback / React.memo**.
 
+## El album es una planilla de botones (no se escribe nada)
+
+El album ya viene cargado con **las 993 estampas oficiales** y su numeracion real:
+48 equipos × 20 (`MEX1`..`MEX20`, `RSA1`..`RSA20`, …, `PAN1`..`PAN20`) + las 19
+oficiales `FWC1`..`FWC19` + las 14 de Coca-Cola `CC1`..`CC14`. El catalogo lo arma
+`utils/album.js` con `generarCatalogo()`.
+
+**El usuario no escribe el nombre de ninguna estampa**: cada estampa es un **boton**
+(`components/ItemCard.jsx`) y al hacerle clic cicla su estado
+**faltante → pegada → repetida → faltante**. El color del boton dice el estado
+(rojo punteado / verde / amarillo). Asi nadie se confunde escribiendo codigos a mano.
+
+Solo se guarda en `localStorage` el mapa `{ codigo: estado }` de las que NO estan
+faltantes, asi que el album persiste entre recargas sin guardar las 993.
+
 ## Como probarlo rapido
 
-1. `cd frontend && npm install && npm run dev`
-2. Arranca en modo **Local**. Como el album empieza vacio, sale un boton
-   **"cargar estampas de ejemplo"** que siembra la numeracion completa
-   (20 por grupo + 19 FWC + 14 Coca-Cola = 273 estampas) con estados repartidos
-   y un historial de actividad de los ultimos 7 dias. Asi las graficas tienen
-   con que dibujar y se nota el efecto del Profiler con volumen.
-3. Cambia un filtro o marca una estampa como **pegada**: las 3 graficas y el
-   panel de numeros se recalculan solos.
+1. `cd frontend; npm install; npm run dev`
+2. Sale la planilla completa, todo en **faltante**. Hace clic en cualquier estampa
+   para marcarla pegada → repetida → faltante.
+3. Hay un boton **"rellenar demo"** que marca un patron de estampas y arma un
+   historial de actividad de 7 dias, para ver las graficas con datos y notar el
+   efecto del Profiler con volumen (993 botones). El boton **"reiniciar"** deja todo
+   en faltante de nuevo.
+4. Cambia un filtro o marca una estampa: las 3 graficas y el panel de numeros se
+   recalculan solos.
 
 ## El reducer
 
@@ -143,11 +159,12 @@ Acciones (7): `HIDRATAR`, `AGREGAR`, `ELIMINAR` (soft delete), `CAMBIAR_ESTADO`,
 
 ## Filtros combinados
 
-Barra con **categoria + estado + busqueda por nombre**, los tres se aplican a la
-vez sobre la lista (ver `itemsVisibles` en `App.jsx`, envuelto en `useMemo`).
+Barra con **equipo/seccion + estado + busqueda por codigo**, los tres se aplican a
+la vez sobre la lista (ver `itemsVisibles` en `App.jsx`, envuelto en `useMemo`).
 El boton **"Limpiar filtros"** despacha `LIMPIAR_FILTROS` y se deshabilita solo
 cuando no hay ningun filtro activo. Las graficas y las estadisticas se calculan
-sobre `itemsVisibles`, por eso **reaccionan a los filtros en tiempo real**.
+sobre `itemsVisibles`, por eso **reaccionan a los filtros en tiempo real** (ej.
+filtra "Argentina" y las 3 graficas y los numeros pasan a ser solo de ese equipo).
 
 ## Las 3 graficas (`components/Graficas.jsx`)
 
@@ -155,71 +172,75 @@ Todas con **tooltip + leyenda + ResponsiveContainer**:
 
 1. **Actividad ultimos 7 dias** (LineChart): cuantas estampas pegue por dia.
    Sale del array `actividad` del reducer (eventos `REGISTRAR_ACTIVIDAD`).
-2. **Distribucion por categoria** (PieChart): cuantas estampas hay por grupo /
-   equipo, cada porcion con el color de la cabeza de grupo.
-3. **Avance por categoria** (BarChart apilado) — *mi grafica original*, ver abajo.
+2. **Distribucion por confederacion** (PieChart): cuantas estampas hay por
+   categoria (UEFA, CONMEBOL, CONCACAF, CAF, AFC, OFC y Especiales), cada porcion
+   con su color.
+3. **Avance por confederacion** (BarChart apilado) — *mi grafica original*, ver abajo.
+
+El panel de numeros de arriba cubre el resto de lo que pedia el album: **cuantas
+hay** en vista, **cuantas faltan**, **cuantas repetidas**, **cuantas pegadas**,
+**cuantas especiales** (FWC + CC) y el **% de avance**.
 
 ## Mi grafica original
 
-La tercera grafica es un **BarChart apilado** donde cada barra es una categoria
+La tercera grafica es un **BarChart apilado** donde cada barra es una confederacion
 y se divide en tres segmentos: **faltante / repetida / pegada** (rojo / amarillo /
-verde, los mismos colores que uso en los bordes de las tarjetas).
+verde, los mismos colores que uso en los botones).
 
-**Por que la elegi:** las otras dos graficas contestan "cuantas hay por equipo"
-(pie) y "cuanto avance esta semana" (lineas), pero ninguna me dice *en que grupo
-me estoy atorando*. Con la apilada veo de un vistazo que, por ejemplo, el Grupo H
-esta casi lleno de verde (pegadas) mientras que las Coca-Cola son casi todo rojo
-(faltante) y tengo un monton de repetidas amarillas en el Grupo E para
-intercambiar. Es la grafica que de verdad usaria para decidir **que estampas
-buscar o cambiar**, no solo para mirar numeros. Ademas, como comparte el `stackId`,
-la altura total de cada barra tambien me dice cuantas estampas tiene esa categoria.
+**Por que la elegi:** las otras dos contestan "cuantas hay por confederacion" (pie)
+y "cuanto avance esta semana" (lineas), pero ninguna me dice *donde me estoy
+atorando*. Con la apilada veo de un vistazo que, por ejemplo, CAF esta casi todo
+rojo (me faltan muchas africanas) mientras que CONMEBOL ya esta casi verde, y que
+tengo un monton de amarillas (repetidas) en UEFA para intercambiar. Es la grafica
+que de verdad usaria para decidir **que estampas buscar o cambiar**, no solo para
+mirar numeros. Ademas, como los tres `<Bar>` comparten `stackId`, la altura total
+de cada barra tambien me dice el tamano de esa confederacion.
 
 ## Mis 3 decisiones tecnicas
 
-1. **Estructura del reducer: un solo objeto, no objetos planos sueltos.**
-   Junte `lista` y los tres filtros en el mismo estado en vez de tener un reducer
-   para la lista y otro para los filtros. La razon: la lista filtrada (`itemsVisibles`)
-   depende **a la vez** de la lista y de los tres filtros, asi que tenerlos juntos
-   me deja recalcularla con un solo `useMemo` y un solo dispatch, sin riesgo de
-   desincronizar dos estados. Lo unico que saque aparte fue `actividad`, porque
-   la grafica de 7 dias itera sobre **eventos** (cuando pegue algo), no sobre el
-   estado actual de cada item; si guardaba la fecha dentro de cada item, perdia el
-   historico al cambiar el item de estado.
+1. **Catalogo fijo + estado por separado (botones, no formulario).**
+   En vez de dejar que el usuario escriba estampas (se equivocaba con los codigos),
+   el catalogo de 993 estampas es **fijo** (`generarCatalogo`) y lo unico que
+   cambia es el `estado` de cada una. El reducer guarda la lista completa y en
+   `localStorage` solo persisto el mapa `{ codigo: estado }` de las no-faltantes.
+   Le paso `item.estado` al handler `onCiclar(id, estado)` para que `App` **no**
+   tenga que leer la lista al hacer clic: asi el `useCallback` queda con deps
+   vacias (referencia estable) y el `React.memo` de `ItemCard` de verdad evita
+   re-renders cuando filtro o busco sobre los 993 botones.
 
 2. **La accion mas dificil: `REGISTRAR_ACTIVIDAD` (mantener el reducer puro).**
    El reto no fue el `switch` sino *no romper la pureza*. La tentacion era hacer
    `fecha: new Date()` dentro del reducer, pero eso lo vuelve impuro (no se puede
    testear con un input fijo). La solucion fue que `App` calcule `hoyISO()` **antes**
-   de despachar y la mande en el `payload`. Mismo problema con los `id`: los genera
-   el storage, no el reducer. `ELIMINAR` tambien fue tramposa: es un *soft delete*
-   (`activo: false`) con `.map`, no un `.filter`, para que coincida con lo que hace
-   la API y no perder el item de verdad.
+   de despachar y la mande en el `payload`. Por eso, cuando un clic deja una estampa
+   en `pegada`, `App` despacha **dos** acciones: `CAMBIAR_ESTADO` y luego
+   `REGISTRAR_ACTIVIDAD` con la fecha ya resuelta.
 
 3. **La grafica mas compleja: el BarChart apilado.**
    Las otras dos son casi directas. La apilada me obligo a transformar la lista a
-   un formato con una fila por categoria y tres llaves (`faltante`, `repetida`,
+   un formato con una fila por confederacion y tres llaves (`faltante`, `repetida`,
    `pegada`) — eso es `datosApiladosPorCategoria` en `utils/estadisticas.js` —, a
    compartir `stackId="a"` entre los tres `<Bar>`, y a pelear con el eje X
-   (etiquetas de categorias rotadas -35° con `interval={0}` para que no se
-   encimen). Esa transformacion es la que envuelvo en `useMemo` para que solo se
-   recalcule cuando cambian los filtros.
+   (etiquetas rotadas -35° con `interval={0}` para que no se encimen). Esa
+   transformacion es la que envuelvo en `useMemo` para que solo se recalcule cuando
+   cambian los filtros.
 
 ## Optimizacion (useMemo / useCallback / React.memo)
 
 - **`useMemo`**: `itemsVisibles` (lista filtrada), `stats`, `porCategoria`,
-  `apiladas` y `actividad7`. Sin esto, cada tecla en la busqueda recalculaba 273
-  filtros + 3 transformaciones de grafica.
-- **`useCallback`**: `cambiarEstado`, `archivar`, `trasAgregar`, `filtrar`,
-  `limpiarFiltros`. Como `dispatch` es estable, estos handlers mantienen la misma
-  referencia entre renders.
+  `apiladas` y `actividad7`. Sin esto, cada tecla en la busqueda recalculaba el
+  filtro sobre 993 estampas + 3 transformaciones de grafica.
+- **`useCallback`**: `ciclar`, `filtrar`, `limpiarFiltros`. Como `dispatch` es
+  estable y a `ciclar` le paso el estado actual por parametro, estos handlers
+  mantienen la misma referencia entre renders (deps vacias).
 - **`React.memo`** en `ItemCard`: combinado con los handlers estables de arriba,
-  hace que al escribir en la busqueda **solo** se re-rendericen las tarjetas cuyo
-  item cambio, no las 273.
+  al escribir en la busqueda **solo** se re-renderizan los botones que cambian,
+  no los 993.
 
 ### Evidencia del Profiler
 
-Captura con la lista de ejemplo (273 estampas) cargada, escribiendo **una letra**
-en la busqueda y midiendo ese commit con React DevTools → Profiler.
+Captura con el album lleno (993 estampas, usando "rellenar demo"), escribiendo
+**una letra** en la busqueda y midiendo ese commit con React DevTools → Profiler.
 
 **ANTES** (sin `React.memo` ni `useCallback`, handlers re-creados en cada render):
 
@@ -229,30 +250,32 @@ en la busqueda y midiendo ese commit con React DevTools → Profiler.
 
 ![profiler despues](docs/profiler-despues.png)
 
-**Analisis:** antes, una sola tecla en la busqueda renderizaba `App` + las 273
-`ItemCard` (todas en gris-azul "did render" en el flamegraph) porque cada render
-de `App` les pasaba funciones `onCambiarEstado` / `onArchivar` nuevas, y el
-`.filter` de la lista corria sin memoizar. Despues, `App` renderiza pero la gran
-mayoria de las `ItemCard` aparecen en gris "did not render" — solo se redibujan
-las que el filtro deja visibles. El tiempo de ese commit baja de ~Xms a ~Yms
-(rellenar con los numeros reales de las capturas).
+**Analisis:** antes, una sola tecla en la busqueda renderizaba `App` + los cientos
+de `ItemCard` visibles (todos en gris-azul "did render" en el flamegraph) porque
+cada render de `App` les pasaba una funcion `onCiclar` nueva, y el `.filter` de la
+lista corria sin memoizar. Despues, `App` renderiza pero la gran mayoria de los
+botones aparecen en gris "did not render" — solo se redibujan los que el filtro
+deja visibles. El tiempo de ese commit baja de ~Xms a ~Yms (rellenar con los
+numeros reales de las capturas).
 
 > Nota: las dos imagenes (`docs/profiler-antes.png` y `docs/profiler-despues.png`)
 > hay que tomarlas con el Profiler en el navegador; para reproducir el "antes" basta
-> quitar temporalmente el `memo(...)` de `ItemCard` y los `useCallback` de `App`.
+> quitar temporalmente el `memo(...)` de `ItemCard` y el `useCallback` de `ciclar`.
 
 ## Estado de los pendientes de fase 2
 
 Lo que deje anotado para fase 3 en el README anterior, y que paso:
 
-- **Numeracion de las estampas**: hecho. Cada estampa tiene `numero` y se muestra
-  como `#n` en la tarjeta; el formulario tiene un campo de numero opcional. El seed
-  respeta la numeracion oficial (FWC1-FWC19, MEX1-MEX20, …, CC1-CC14).
+- **Numeracion real de las estampas**: hecho. El album entero usa la numeracion
+  oficial (`FWC1`-`FWC19`, `MEX1`-`MEX20`, …, `CC1`-`CC14`) y cada boton muestra su
+  codigo y su `#numero`.
+- **Vista grid tipo planilla**: hecha. La planilla agrupa las estampas por
+  seccion/equipo, con bandera, nombre y contador "pegadas/total", y se marca con
+  un clic (`components/ListaItems.jsx`).
 - **Categorias especiales FWC y Coca-Cola**: hechas (`especial: true`), se cuentan
   aparte en el chip "especiales".
 - **Indicador de progreso "X/Y pegadas (%)"**: hecho, es la barra de arriba del panel.
-- **Seed de ejemplo**: hecho en el frontend (modo local) con el boton de cargar.
-- **Pendiente real para mas adelante**: el seed en el *backend* (`seed.js` + columnas
-  `codigo`/`pais`/`numero` en postgres) y la vista grid tipo planilla con
-  `PATCH /api/items/:codigo/estado`. Preferi enfocar la fase 3 en lo que puntea la
-  rubrica (reducer, graficas, memoizacion) antes que en el grid.
+- **Pendiente real para mas adelante**: persistir el album en el *backend*
+  (columnas `codigo`/`pais`/`numero` en postgres y `PATCH /api/items/:codigo/estado`).
+  En fase 3 el album persiste en `localStorage`; preferi enfocar la rubrica
+  (reducer, graficas, memoizacion) antes que el backend.
