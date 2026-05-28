@@ -1,16 +1,17 @@
-import { CATEGORIAS, ESTADOS } from '../utils/categorias.js';
+import { SECCIONES, ESTADOS } from '../utils/album.js';
 
-// barra de filtros combinados: categoria + estado + busqueda por nombre.
+// barra de filtros combinados: seccion (equipo) + estado + busqueda por codigo.
 // no tiene estado propio, todo vive en el reducer; aca solo despacho FILTRAR.
-export default function Filtros({ filtroCategoria, filtroEstado, busqueda, onFiltrar, onLimpiar }) {
+export default function Filtros({ filtroCategoria, filtroEstado, busqueda, onFiltrar, onLimpiar, inputRef }) {
   const hayFiltros =
     filtroCategoria !== 'todas' || filtroEstado !== 'todos' || busqueda !== '';
 
   return (
     <div className="filtros">
       <input
+        ref={inputRef}
         type="search"
-        placeholder="buscar por nombre… (ej. MEX, Messi)"
+        placeholder="buscar por codigo… (ej. MEX10, FWC3)"
         value={busqueda}
         onChange={(e) => onFiltrar('busqueda', e.target.value)}
       />
@@ -18,10 +19,10 @@ export default function Filtros({ filtroCategoria, filtroEstado, busqueda, onFil
         value={filtroCategoria}
         onChange={(e) => onFiltrar('filtroCategoria', e.target.value)}
       >
-        <option value="todas">Todas las categorias</option>
-        {CATEGORIAS.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.emoji} {c.nombre}
+        <option value="todas">Todos los equipos</option>
+        {SECCIONES.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.emoji} {s.nombre}
           </option>
         ))}
       </select>

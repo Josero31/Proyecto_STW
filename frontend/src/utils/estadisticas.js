@@ -1,43 +1,39 @@
-import { CATEGORIAS, ESTADOS } from './categorias.js';
+import { CONFEDERACIONES } from './album.js';
 
-// Estas funciones son las que envuelvo con useMemo en App. Las saque del
-// componente para poder reutilizarlas y para que App se lea mas corto.
-// Reciben SIEMPRE la lista ya filtrada (las graficas reaccionan a los filtros).
+// Estas funciones son las que envuelvo con useMemo en App. Reciben SIEMPRE la
+// lista ya filtrada, por eso las graficas reaccionan a los filtros activos.
 
-// totales para el panel de arriba: cuantas hay, faltantes, repetidas, pegadas,
-// cuantas son especiales (FWC + CC) y el % de avance.
+// totales para el panel de arriba: cuantas hay en vista, faltantes, repetidas,
+// pegadas, cuantas son especiales (FWC + CC) y el % de avance.
 export function calcularEstadisticas(items) {
   const total = items.length;
   const faltantes = items.filter((i) => i.estado === 'faltante').length;
   const repetidas = items.filter((i) => i.estado === 'repetida').length;
   const pegadas = items.filter((i) => i.estado === 'pegada').length;
-  const especiales = items.filter((i) => {
-    const cat = CATEGORIAS.find((c) => c.id === i.categoriaId);
-    return cat?.especial;
-  }).length;
+  const especiales = items.filter((i) => i.especial).length;
   const progreso = total === 0 ? 0 : Math.round((pegadas / total) * 100);
   return { total, faltantes, repetidas, pegadas, especiales, progreso };
 }
 
-// PieChart -> cuantas estampas por categoria (por equipo / grupo)
+// PieChart -> cuantas estampas por confederacion (la "categoria" del album)
 export function datosPorCategoria(items) {
-  return CATEGORIAS.map((cat) => ({
-    nombre: cat.nombre,
-    valor: items.filter((i) => i.categoriaId === cat.id).length,
-    color: cat.color,
+  return CONFEDERACIONES.map((conf) => ({
+    nombre: conf.nombre,
+    valor: items.filter((i) => i.conf === conf.id).length,
+    color: conf.color,
   })).filter((d) => d.valor > 0);
 }
 
-// BarChart apilado (mi grafica original) -> por cada categoria el desglose
-// faltante / repetida / pegada. Solo incluyo categorias que tengan algo.
+// BarChart apilado (mi grafica original) -> por cada confederacion el desglose
+// faltante / repetida / pegada. Solo incluyo las que tengan algo en vista.
 export function datosApiladosPorCategoria(items) {
-  return CATEGORIAS.map((cat) => {
-    const enCat = items.filter((i) => i.categoriaId === cat.id);
+  return CONFEDERACIONES.map((conf) => {
+    const enConf = items.filter((i) => i.conf === conf.id);
     return {
-      nombre: cat.nombre,
-      faltante: enCat.filter((i) => i.estado === 'faltante').length,
-      repetida: enCat.filter((i) => i.estado === 'repetida').length,
-      pegada: enCat.filter((i) => i.estado === 'pegada').length,
+      nombre: conf.nombre,
+      faltante: enConf.filter((i) => i.estado === 'faltante').length,
+      repetida: enConf.filter((i) => i.estado === 'repetida').length,
+      pegada: enConf.filter((i) => i.estado === 'pegada').length,
     };
   }).filter((d) => d.faltante + d.repetida + d.pegada > 0);
 }
@@ -57,6 +53,3 @@ export function datosActividad7Dias(actividad, hoyISO) {
   }
   return dias;
 }
-
-// usado por algun filtro/validacion mas adelante
-export const _todosLosEstados = ESTADOS;

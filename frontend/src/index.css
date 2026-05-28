@@ -360,7 +360,117 @@ kbd {
   cursor: default;
 }
 
-/* el numero opcional del formulario no necesita ocupar toda la fila */
-.form input[type="number"] {
-  width: 120px;
+.btn-reset {
+  margin-left: 0.4rem;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+/* leyenda de estados (que significa cada color) */
+.leyenda-estados {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  opacity: 0.85;
+  margin: 0 0 0.75rem;
+}
+
+.punto {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  margin-left: 0.3rem;
+}
+
+.punto.faltante { background: var(--bg); border: 1px dashed var(--estado-faltante); }
+.punto.pegada   { background: var(--estado-pegada); }
+.punto.repetida { background: var(--estado-repetida); }
+
+/* planilla del album: secciones (equipos) con su grid de estampas */
+.planilla {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.seccion {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem 0.7rem;
+}
+
+.seccion-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.seccion-nombre { font-weight: 600; }
+.seccion-conteo { font-size: 0.78rem; opacity: 0.7; }
+
+.seccion-estampas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+/* cada estampa es un boton */
+.estampa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.15;
+  transition: transform 0.05s;
+}
+
+.estampa:hover { outline: 2px solid var(--primary); }
+.estampa:active { transform: scale(0.94); }
+
+.estampa-cod {
+  font-family: ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.estampa-num { font-size: 0.62rem; opacity: 0.6; }
+
+/* colores por estado (sobre-escriben el borde generico de las cards viejas) */
+.estampa.estado-faltante {
+  border: 1px dashed var(--estado-faltante);
+  opacity: 0.65;
+}
+
+.estampa.estado-pegada {
+  border: 1px solid var(--estado-pegada);
+  background: var(--estado-pegada);
+  color: #fff;
+  opacity: 1;
+}
+
+.estampa.estado-repetida {
+  border: 1px solid var(--estado-repetida);
+  background: var(--estado-repetida);
+  color: #1d2a1d;
+  opacity: 1;
 }

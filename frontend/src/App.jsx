@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
-import FormularioItem from './components/FormularioItem.jsx';
 import ListaItems from './components/ListaItems.jsx';
 import Filtros from './components/Filtros.jsx';
 import Estadisticas from './components/Estadisticas.jsx';
 import Graficas from './components/Graficas.jsx';
-import { useStorage } from './context/StorageProvider.jsx';
 import { useTema } from './context/ThemeContext.jsx';
 import { itemsReducer, estadoInicial } from './reducers/itemsReducer.js';
-import { generarEjemplo } from './utils/seed.js';
+import { generarCatalogo, siguienteEstado } from './utils/album.js';
 import {
   calcularEstadisticas,
   datosPorCategoria,
@@ -15,6 +13,7 @@ import {
   datosActividad7Dias,
 } from './utils/estadisticas.js';
 
+const LLAVE_ESTADOS = 'album_mundial2026_estados';
 const LLAVE_ACTIVIDAD = 'album_mundial2026_actividad';
 
 // fecha local de hoy en 'YYYY-MM-DD'. Vive en el componente (no en el reducer)
@@ -26,71 +25,61 @@ function hoyISO() {
   return `${d.getFullYear()}-${mes}-${dia}`;
 }
 
-function leerActividad() {
+function restarDias(hoy, dias) {
+  const d = new Date(hoy + 'T00:00:00');
+  d.setDate(d.getDate() - dias);
+  return d.toISOString().slice(0, 10);
+}
+
+function leerJSON(llave, porDefecto) {
   try {
-    const raw = localStorage.getItem(LLAVE_ACTIVIDAD);
-    return raw ? JSON.parse(raw) : [];
+    const raw = localStorage.getItem(llave);
+    return raw ? JSON.parse(raw) : porDefecto;
   } catch {
-    return [];
+    return porDefecto;
   }
 }
 
 export default function App() {
-  const {
-    modo, setModo, cargando, error,
-    obtenerItems, actualizarItem, eliminarItem, sembrarLocal,
-  } = useStorage();
   const { tema, cambiarTema } = useTema();
 
   const [estado, dispatch] = useReducer(itemsReducer, estadoInicial);
 
-  // ref #1 -> input del formulario para hacerle focus con Ctrl+N
-  const inputNombreRef = useRef(null);
-  // ref #2 -> ID del auto-refresh en modo API, para limpiarlo sin re-render
-  const intervaloRef = useRef(null);
+  // ref -> input de busqueda, para enfocarlo con Ctrl+B desde cualquier lado
+  const inputBuscarRef = useRef(null);
 
-  // carga inicial: items desde storage + actividad guardada en localStorage
+  // carga inicial: armo el catalogo completo (993 estampas) y le aplico los
+  // estados que el usuario ya tenia guardados en localStorage.
   useEffect(() => {
-    let cancelado = false;
-    obtenerItems().then((datos) => {
-      if (!cancelado) {
-        dispatch({ type: 'HIDRATAR', payload: { lista: datos, actividad: leerActividad() } });
-      }
-    });
-    return () => {
-      cancelado = true;
-    };
-  }, [obtenerItems]);
+    const estadosGuardados = leerJSON(LLAVE_ESTADOS, {});
+    const actividad = leerJSON(LLAVE_ACTIVIDAD, []);
+    dispatch({ type: 'HIDRATAR', payload: { lista: generarCatalogo(estadosGuardados), actividad } });
+  }, []);
 
-  // persisto la actividad cada vez que cambia (el historial de la grafica de 7 dias)
+  // persisto solo las estampas que NO estan faltantes (mapa codigo -> estado),
+  // asi el localStorage queda chico y al recargar se rehidrata el catalogo.
+  useEffect(() => {
+    const mapa = {};
+    for (const it of estado.lista) {
+      if (it.estado !== 'faltante') mapa[it.codigo] = it.estado;
+    }
+    localStorage.setItem(LLAVE_ESTADOS, JSON.stringify(mapa));
+  }, [estado.lista]);
+
   useEffect(() => {
     localStorage.setItem(LLAVE_ACTIVIDAD, JSON.stringify(estado.actividad));
   }, [estado.actividad]);
 
-  // en modo API: auto-refresh cada 20s. El ID va en ref para no re-renderizar.
-  useEffect(() => {
-    if (modo !== 'api') return;
-    intervaloRef.current = setInterval(() => {
-      obtenerItems().then((datos) =>
-        dispatch({ type: 'HIDRATAR', payload: { lista: datos, actividad: leerActividad() } })
-      );
-    }, 20000);
-    return () => {
-      clearInterval(intervaloRef.current);
-      intervaloRef.current = null;
-    };
-  }, [modo, obtenerItems]);
-
-  // atajos: Ctrl+N enfoca input, T cambia el tema
+  // atajos: Ctrl+B enfoca la busqueda, T cambia el tema
   useEffect(() => {
     function manejarTecla(e) {
       const escribiendo =
         e.target.tagName === 'INPUT' ||
         e.target.tagName === 'TEXTAREA' ||
         e.target.tagName === 'SELECT';
-      if (e.ctrlKey && (e.key === 'n' || e.key === 'N')) {
+      if (e.ctrlKey && (e.key === 'b' || e.key === 'B')) {
         e.preventDefault();
-        inputNombreRef.current?.focus();
+        inputBuscarRef.current?.focus();
         return;
       }
       if (!escribiendo && (e.key === 't' || e.key === 'T') && !e.ctrlKey && !e.metaKey) {
@@ -102,44 +91,20 @@ export default function App() {
   }, [cambiarTema]);
 
   // --- handlers memorizados (useCallback) que bajan a los hijos ---
-  // dispatch es estable, asi que estos handlers solo cambian si cambia la
-  // funcion de storage (al cambiar de modo). Eso es lo que hace que el
-  // React.memo de ItemCard de verdad evite renders al filtrar/buscar.
+  // le paso item.estado al handler para no leer la lista aca: asi el useCallback
+  // queda con deps vacias (estable) y el React.memo de ItemCard evita renders.
 
-  const trasAgregar = useCallback((nuevo) => {
-    dispatch({ type: 'AGREGAR', payload: nuevo });
+  const ciclar = useCallback((id, estadoActual) => {
+    const sig = siguienteEstado(estadoActual);
+    dispatch({ type: 'CAMBIAR_ESTADO', payload: { id, estado: sig } });
+    // si la acabo de pegar, registro el evento para la grafica de 7 dias
+    if (sig === 'pegada') {
+      dispatch({
+        type: 'REGISTRAR_ACTIVIDAD',
+        payload: { fecha: hoyISO(), tipo: 'pegada', itemId: id },
+      });
+    }
   }, []);
-
-  const cambiarEstado = useCallback(
-    async (id, nuevoEstado) => {
-      try {
-        await actualizarItem(id, { estado: nuevoEstado });
-        dispatch({ type: 'CAMBIAR_ESTADO', payload: { id, estado: nuevoEstado } });
-        // si la acabo de pegar, registro el evento para la grafica de 7 dias
-        if (nuevoEstado === 'pegada') {
-          dispatch({
-            type: 'REGISTRAR_ACTIVIDAD',
-            payload: { fecha: hoyISO(), tipo: 'pegada', itemId: id },
-          });
-        }
-      } catch (err) {
-        alert('No se pudo actualizar: ' + err.message);
-      }
-    },
-    [actualizarItem]
-  );
-
-  const archivar = useCallback(
-    async (id) => {
-      try {
-        await eliminarItem(id);
-        dispatch({ type: 'ELIMINAR', payload: id });
-      } catch (err) {
-        alert('No se pudo archivar: ' + err.message);
-      }
-    },
-    [eliminarItem]
-  );
 
   const filtrar = useCallback((campo, valor) => {
     dispatch({ type: 'FILTRAR', payload: { campo, valor } });
@@ -149,23 +114,39 @@ export default function App() {
     dispatch({ type: 'LIMPIAR_FILTROS' });
   }, []);
 
-  function cargarEjemplo() {
-    const { lista, actividad } = generarEjemplo(hoyISO());
-    sembrarLocal(lista); // en modo API no hace nada
+  // boton de demo: marca un patron de estampas (no aleatorio, para poder comparar
+  // el Profiler con la misma data) y arma un historial de actividad de 7 dias.
+  function rellenarDemo() {
+    const hoy = hoyISO();
+    const actividad = [];
+    const lista = estado.lista.map((it, idx) => {
+      const r = idx % 5;
+      let est = 'faltante';
+      if (r === 0 || r === 1) est = 'pegada';
+      else if (r === 2) est = 'repetida';
+      if (est === 'pegada') {
+        actividad.push({ fecha: restarDias(hoy, idx % 7), tipo: 'pegada', itemId: it.id });
+      }
+      return { ...it, estado: est };
+    });
     dispatch({ type: 'HIDRATAR', payload: { lista, actividad } });
+  }
+
+  function reiniciarAlbum() {
+    dispatch({ type: 'HIDRATAR', payload: { lista: generarCatalogo({}), actividad: [] } });
   }
 
   // --- derivados con useMemo ---
 
-  // lista visible: solo activas + filtros combinados (categoria + estado + busqueda)
+  // lista visible: filtros combinados (seccion/equipo + estado + busqueda por codigo)
   const itemsVisibles = useMemo(() => {
     let res = estado.lista.filter((i) => i.activo !== false);
     if (estado.busqueda) {
       const q = estado.busqueda.toLowerCase();
-      res = res.filter((i) => i.nombre.toLowerCase().includes(q));
+      res = res.filter((i) => i.codigo.toLowerCase().includes(q));
     }
     if (estado.filtroCategoria !== 'todas') {
-      res = res.filter((i) => i.categoriaId === estado.filtroCategoria);
+      res = res.filter((i) => i.seccionId === estado.filtroCategoria);
     }
     if (estado.filtroEstado !== 'todos') {
       res = res.filter((i) => i.estado === estado.filtroEstado);
@@ -173,8 +154,8 @@ export default function App() {
     return res;
   }, [estado.lista, estado.busqueda, estado.filtroCategoria, estado.filtroEstado]);
 
-  // las estadisticas y las graficas se calculan sobre la lista YA filtrada,
-  // por eso reaccionan a los filtros activos.
+  // estadisticas y graficas se calculan sobre la lista YA filtrada -> reaccionan
+  // a los filtros activos.
   const stats = useMemo(() => calcularEstadisticas(itemsVisibles), [itemsVisibles]);
   const porCategoria = useMemo(() => datosPorCategoria(itemsVisibles), [itemsVisibles]);
   const apiladas = useMemo(() => datosApiladosPorCategoria(itemsVisibles), [itemsVisibles]);
@@ -191,33 +172,22 @@ export default function App() {
           <button className="btn-toggle" onClick={cambiarTema} title="Cambiar tema (T)">
             {tema === 'claro' ? '🌙 oscuro' : '☀️ claro'}
           </button>
-          <label className="switch-modo">
-            <span>{modo === 'api' ? '☁️ API' : '💾 Local'}</span>
-            <input
-              type="checkbox"
-              checked={modo === 'api'}
-              onChange={(e) => setModo(e.target.checked ? 'api' : 'local')}
-            />
-          </label>
         </div>
       </header>
 
       <p className="estado-app">
-        {itemsVisibles.length} estampas en vista
-        {cargando && ' · cargando…'}
-        {error && ` · error: ${error}`}
-        {estado.lista.length === 0 && (
-          <button className="btn-ejemplo" onClick={cargarEjemplo}>
-            cargar estampas de ejemplo
-          </button>
-        )}
+        {itemsVisibles.length} estampas en vista · clic en una estampa para marcar
+        <button className="btn-ejemplo" onClick={rellenarDemo}>
+          rellenar demo
+        </button>
+        <button className="btn-reset" onClick={reiniciarAlbum}>
+          reiniciar
+        </button>
       </p>
 
       <Estadisticas stats={stats} />
 
       <Graficas actividad7={actividad7} porCategoria={porCategoria} apiladas={apiladas} />
-
-      <FormularioItem onAgregado={trasAgregar} inputRef={inputNombreRef} />
 
       <Filtros
         filtroCategoria={estado.filtroCategoria}
@@ -225,16 +195,20 @@ export default function App() {
         busqueda={estado.busqueda}
         onFiltrar={filtrar}
         onLimpiar={limpiarFiltros}
+        inputRef={inputBuscarRef}
       />
 
-      <ListaItems
-        items={itemsVisibles}
-        onCambiarEstado={cambiarEstado}
-        onArchivar={archivar}
-      />
+      <p className="leyenda-estados">
+        clic para cambiar:
+        <span className="punto faltante" /> faltante →
+        <span className="punto pegada" /> pegada →
+        <span className="punto repetida" /> repetida
+      </p>
+
+      <ListaItems items={itemsVisibles} onCiclar={ciclar} />
 
       <footer className="atajos">
-        Atajos: <kbd>Ctrl</kbd>+<kbd>N</kbd> enfoca el nombre · <kbd>T</kbd> cambia tema
+        Atajos: <kbd>Ctrl</kbd>+<kbd>B</kbd> busca · <kbd>T</kbd> cambia tema
       </footer>
     </div>
   );

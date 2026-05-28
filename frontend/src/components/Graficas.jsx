@@ -13,7 +13,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { COLOR_ESTADO } from '../utils/categorias.js';
+import { COLOR_ESTADO } from '../utils/album.js';
 
 // Las 3 graficas. Reciben los datos YA calculados con useMemo desde App, asi
 // que cuando cambia un filtro App recalcula los datos y estas se redibujan
@@ -43,9 +43,9 @@ export default function Graficas({ actividad7, porCategoria, apiladas }) {
         </ResponsiveContainer>
       </div>
 
-      {/* Grafica 2: distribucion por categoria / equipo (PieChart) */}
+      {/* Grafica 2: distribucion por confederacion (PieChart) */}
       <div className="grafica">
-        <h3>Estampas por categoria</h3>
+        <h3>Estampas por confederacion</h3>
         <ResponsiveContainer width="100%" height={260}>
           <PieChart>
             <Pie
@@ -67,9 +67,9 @@ export default function Graficas({ actividad7, porCategoria, apiladas }) {
         </ResponsiveContainer>
       </div>
 
-      {/* Grafica 3 (ORIGINAL): desglose apilado faltante/repetida/pegada por categoria */}
+      {/* Grafica 3 (ORIGINAL): desglose apilado faltante/repetida/pegada por confederacion */}
       <div className="grafica grafica-ancha">
-        <h3>Avance por categoria (faltante / repetida / pegada)</h3>
+        <h3>Avance por confederacion (faltante / repetida / pegada)</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={apiladas} margin={{ top: 8, right: 16, bottom: 40, left: -16 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
