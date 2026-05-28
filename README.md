@@ -239,28 +239,26 @@ de cada barra tambien me dice el tamano de esa confederacion.
 
 ### Evidencia del Profiler
 
-Captura con el album lleno (993 estampas, usando "rellenar demo"), escribiendo
-**una letra** en la busqueda y midiendo ese commit con React DevTools → Profiler.
+Medido con el album lleno (993 estampas, usando "rellenar demo") e interactuando
+sobre la planilla, capturando los commits con React DevTools → Profiler.
 
-**ANTES** (sin `React.memo` ni `useCallback`, handlers re-creados en cada render):
+![profiler con la optimizacion activa](docs/fase%203.png)
 
-![profiler antes](docs/profiler-antes.png)
+**Que muestra la captura (con `React.memo` + `useCallback` activos):** al
+interactuar, cada commit se resuelve en **~0.2 ms** (Render). En el flamegraph lo
+unico que aparece coloreado ("did render") son unos pocos componentes; **los ~993
+botones `ItemCard` quedan en gris ("did not render")**, es decir NO se vuelven a
+renderizar.
 
-**DESPUES** (con `React.memo` + `useCallback`):
-
-![profiler despues](docs/profiler-despues.png)
-
-**Analisis:** antes, una sola tecla en la busqueda renderizaba `App` + los cientos
-de `ItemCard` visibles (todos en gris-azul "did render" en el flamegraph) porque
-cada render de `App` les pasaba una funcion `onCiclar` nueva, y el `.filter` de la
-lista corria sin memoizar. Despues, `App` renderiza pero la gran mayoria de los
-botones aparecen en gris "did not render" — solo se redibujan los que el filtro
-deja visibles. El tiempo de ese commit baja de ~Xms a ~Yms (rellenar con los
-numeros reales de las capturas).
-
-> Nota: las dos imagenes (`docs/profiler-antes.png` y `docs/profiler-despues.png`)
-> hay que tomarlas con el Profiler en el navegador; para reproducir el "antes" basta
-> quitar temporalmente el `memo(...)` de `ItemCard` y el `useCallback` de `ciclar`.
+**Por que pasa eso (el antes/despues, explicado):** `ItemCard` esta envuelto en
+`React.memo`, y los handlers que le bajo (`onCiclar`) van memorizados con
+`useCallback` (deps vacias, referencia estable). Por eso, cuando cambia el estado
+o un filtro, React compara las props de cada boton, ve que no cambiaron, y **se
+salta su render**. Sin la optimizacion (quitando el `memo` de `ItemCard` o el
+`useCallback`), `App` le pasaria una funcion nueva en cada render y los cientos de
+botones se redibujarian todos (todos en color "did render"), multiplicando el
+tiempo del commit. La captura es justamente la prueba de que eso **no** esta
+pasando: la mayoria de los componentes estan en gris.
 
 ## Estado de los pendientes de fase 2
 
